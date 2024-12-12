@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>피하기 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: #000;
+        }
+        .gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        .startButton:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="gameOver" id="gameOver" style="display: none;">게임 종료! <br> 점수: <span id="finalScore"></span></div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const playerWidth = 50;
+        const playerHeight = 50;
+        let playerX = canvas.width / 2 - playerWidth / 2;
+        let playerY = canvas.height - playerHeight - 10;
+        let playerSpeed = 7;
+
+        const obstacleWidth = 50;
+        const obstacleHeight = 50;
+        let obstacles = [];
+        let obstacleSpeed = 3;
+
+        let score = 0;
+        let gameOver = false;
+
+        // 키 입력 처리
+        let keys = {
+            left: false,
+            right: false
+        };
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowLeft") {
+                keys.left = true;
+            } else if (e.key === "ArrowRight") {
+                keys.right = true;
+            }
+            // 스페이스바 또는 엔터키로 게임 재시작
+            if ((e.key === " " || e.key === "Enter") && gameOver) {
+                startGame(); // 게임 다시 시작
+            }
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowLeft") {
+                keys.left = false;
+            } else if (e.key === "ArrowRight") {
+                keys.right = false;
+            }
+        });
+
+        // 장애물 생성
+        function createObstacle() {
+            let x = Math.random() * (canvas.width - obstacleWidth);
+            obstacles.push({ x, y: -obstacleHeight });
+        }
+
+        // 게임 업데이트
+        function updateGame() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 플레이어 이동
+            if (keys.left && playerX > 0) {
+                playerX -= playerSpeed;
+            }
+            if (keys.right && playerX < canvas.width - playerWidth) {
+                playerX += playerSpeed;
+            }
+
+            // 장애물 업데이트
+            for (let i = 0; i < obstacles.length; i++) {
+                obstacles[i].y += obstacleSpeed;
+
+                // 장애물과 플레이어 충돌 체크
+                if (
+                    playerX < obstacles[i].x + obstacleWidth &&
+                    playerX + playerWidth > obstacles[i].x &&
+                    playerY < obstacles[i].y + obstacleHeight &&
+                    playerY + playerHeight > obstacles[i].y
+                ) {
+                    gameOver = true;
+                    document.getElementById("finalScore").textContent = score;
+                    document.getElementById("gameOver").style.display = "block";
+                }
+
+                // 화면 밖으로 벗어난 장애물 제거
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                    i--;
+                    score++;
+                }
+            }
+
+            // 플레이어 그리기
+            ctx.fillStyle = "blue";
+            ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+
+            // 장애물 그리기
+            ctx.fillStyle = "red";
+            for (let i = 0; i < obstacles.length; i++) {
+                ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacleWidth, obstacleHeight);
+            }
+
+            // 점수 표시
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText(`점수: ${score}`, 10, 30);
+
+            // 게임이 진행 중이면 계속 업데이트
+            if (!gameOver) {
+                requestAnimationFrame(updateGame);
+            }
+        }
+
+        // 게임 시작 함수
+        function startGame() {
+            gameOver = false;
+            playerX = canvas.width / 2 - playerWidth / 2;
+            obstacles = [];
+            score = 0;
+            document.getElementById("gameOver").style.display = "none";
+            updateGame();
+        }
+
+        // 장애물 생성 간격 설정 (0.3초마다 1개씩 떨어지게)
+        setInterval(createObstacle, 300); // 0.3초마다 장애물 생성
+
+        // 게임 시작
+        startGame();
+    </script>
+</body>
+</html>
